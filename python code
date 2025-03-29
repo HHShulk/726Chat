@@ -1,0 +1,55 @@
+import socket
+import threading
+def get_local_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # 不需要真实连接，只要确定可达的地址
+        s.connect(('10.255.255.255', 1))
+        local_ip = s.getsockname()[0]
+    except:
+        local_ip = '127.0.0.1'
+    finally:
+        s.close()
+    return local_ip
+# 服务器配置
+HOST = get_local_ip()
+PORT = 55555
+
+# 选择昵称
+nickname = input("请输入你的昵称: ")
+
+# 创建客户端套接字
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.connect((HOST, PORT))
+
+
+# 接收服务器消息
+def receive():
+    while True:
+        try:
+            # 接收服务器消息
+            message = client.recv(1024).decode('utf-8')
+            if message == 'NICK':
+                client.send(nickname.encode('utf-8'))
+            else:
+                print(message)
+        except:
+            # 处理连接错误
+            print("发生错误，断开连接！")
+            client.close()
+            break
+
+
+# 发送消息给服务器
+def write():
+    while True:
+        message = f'{nickname}: {input("")}'
+        client.send(message.encode('utf-8'))
+
+
+# 创建接收和发送消息的线程
+receive_thread = threading.Thread(target=receive)
+receive_thread.start()
+
+write_thread = threading.Thread(target=write)
+write_thread.start()
